@@ -21,8 +21,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.messages.Message;
@@ -30,85 +32,104 @@ import com.google.android.gms.nearby.messages.MessageListener;
 
 import java.util.List;
 
-
 /**
  * While subscribed in the background, this service shows a persistent notification with the
  * current set of messages from nearby beacons. Nearby launches this service when a message is
  * found or lost, and this service updates the notification, then stops itself.
  */
 public class BackgroundSubscribeIntentService extends IntentService {
-    private static final int MESSAGES_NOTIFICATION_ID = 1;
-    private static final int NUM_MESSAGES_IN_NOTIFICATION = 5;
 
-    public BackgroundSubscribeIntentService() {
-        super("BackgroundSubscribeIntentService");
-    }
+	Runnable runnableCode = null;
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        updateNotification();
-    }
+	private static final int MESSAGES_NOTIFICATION_ID = 1;
 
-    @Override
-    protected void onHandleIntent(Intent intent) {
-        if (intent != null) {
-            Nearby.Messages.handleIntent(intent, new MessageListener() {
-                @Override
-                public void onFound(Message message) {
-                    Utils.saveFoundMessage(getApplicationContext(), message);
-                    updateNotification();
-                }
+	private static final int NUM_MESSAGES_IN_NOTIFICATION = 5;
 
-                @Override
-                public void onLost(Message message) {
-                    Utils.removeLostMessage(getApplicationContext(), message);
-                    updateNotification();
-                }
-            });
-        }
-    }
+	public BackgroundSubscribeIntentService() {
+		super("BackgroundSubscribeIntentService");
+	}
 
-    private void updateNotification() {
-        List<String> messages = Utils.getCachedMessages(getApplicationContext());
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        Intent launchIntent = new Intent(getApplicationContext(), MainActivity.class);
-        launchIntent.setAction(Intent.ACTION_MAIN);
-        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
-                launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		updateNotification();
 
-        String contentTitle = getContentTitle(messages);
-        String contentText = getContentText(messages);
+		// Create the Handler object (on the main thread by default)
+		final Handler handler = new Handler();
+		// Define the code block to be executed
 
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
-                .setSmallIcon(android.R.drawable.star_on)
-                .setContentTitle(contentTitle)
-                .setContentText(contentText)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(contentText))
-                .setOngoing(true)
-                .setContentIntent(pi);
-        notificationManager.notify(MESSAGES_NOTIFICATION_ID, notificationBuilder.build());
-    }
+		runnableCode = new Runnable() {
 
-    private String getContentTitle(List<String> messages) {
-        switch (messages.size()) {
-            case 0:
-                return getResources().getString(R.string.scanning);
-            case 1:
-                return getResources().getString(R.string.one_message);
-            default:
-                return getResources().getString(R.string.many_messages, messages.size());
-        }
-    }
+			@Override
+			public void run() {
+				updateNotification();
+				handler.postDelayed(runnableCode, 60000);
+			}
+		};
+		// Start the initial runnable task by posting through the handler
+		handler.post(runnableCode);
+	}
 
-    private String getContentText(List<String> messages) {
-        String newline = System.getProperty("line.separator");
-        if (messages.size() < NUM_MESSAGES_IN_NOTIFICATION) {
-            return TextUtils.join(newline, messages);
-        }
-        return TextUtils.join(newline, messages.subList(0, NUM_MESSAGES_IN_NOTIFICATION)) +
-                newline + "&#8230;";
-    }
+	@Override
+	protected void onHandleIntent(Intent intent) {
+		List<String> messageList = Utils.getCachedMessages(getApplicationContext());
+
+		if (intent != null) {
+			Nearby.Messages.handleIntent(intent, new MessageListener() {
+
+				@Override
+				public void onFound(Message message) {
+					Utils.saveFoundMessage(getApplicationContext(), message);
+
+					Log.d("CONTENT", "content: " + new String(message.getContent()));
+					Log.d("CONTENT", "namespace: " + new String(message.getNamespace()));
+					Log.d("CONTENT", "type: " + new String(message.getType()));
+
+					updateNotification();
+				}
+
+				@Override
+				public void onLost(Message message) {
+					Utils.removeLostMessage(getApplicationContext(), message);
+					updateNotification();
+				}
+			});
+		}
+	}
+
+	private void updateNotification() {
+		List<String> messages = Utils.getCachedMessages(getApplicationContext());
+		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Intent launchIntent = new Intent(getApplicationContext(), MainActivity.class);
+		launchIntent.setAction(Intent.ACTION_MAIN);
+		launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+		String contentTitle = getContentTitle(messages);
+		String contentText = getContentText(messages);
+
+		NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this).setSmallIcon(android.R.drawable.star_on).setContentTitle(contentTitle).setContentText(contentText).setStyle(new NotificationCompat.BigTextStyle().bigText(contentText)).setOngoing(false).setContentIntent(pi);
+		notificationManager.notify(MESSAGES_NOTIFICATION_ID, notificationBuilder.build());
+	}
+
+	private String getContentTitle(List<String> messages) {
+		switch (messages.size()) {
+			case 0:
+				//return getResources().getString(R.string.scanning);
+				return "";
+			case 1:
+				return getResources().getString(R.string.one_message);
+			default:
+				return getResources().getString(R.string.many_messages, messages.size());
+		}
+	}
+
+	private String getContentText(List<String> messages) {
+		String newline = System.getProperty("line.separator");
+		if (messages.size() < NUM_MESSAGES_IN_NOTIFICATION) {
+			return TextUtils.join(newline, messages);
+		}
+		return TextUtils.join(newline, messages.subList(0, NUM_MESSAGES_IN_NOTIFICATION)) +
+			newline + "&#8230;";
+	}
 }
