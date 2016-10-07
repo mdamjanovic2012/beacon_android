@@ -27,6 +27,9 @@
         <meta-data
             android:name="com.google.android.nearby.messages.API_KEY"
             android:value="AIzaSyAuOW532SyK0k2E_ARd4jB_YsASoUpGK6c" />
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
 
         <activity
             android:name=".MainActivity"
@@ -41,6 +44,8 @@
 
         <service
             android:name=".BackgroundSubscribeIntentService"
+            android:exported="false" />
+        <service android:name=".geoloc.GeofenceTransitionsIntentService"
             android:exported="false" />
 
     </application>
