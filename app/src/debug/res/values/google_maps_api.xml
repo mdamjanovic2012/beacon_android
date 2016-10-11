@@ -1,0 +1,22 @@
+<resources>
+    <!--
+    TODO: Before you run your application, you need a Google Maps API key.
+
+    To get one, follow this link, follow the directions and press "Create" at the end:
+
+    https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=65:85:F5:A2:60:F7:B0:9D:2C:E0:C2:ED:58:51:30:B2:1F:28:68:6B%3Bcom.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons
+
+    You can also add your credentials to an existing key, using this line:
+    65:85:F5:A2:60:F7:B0:9D:2C:E0:C2:ED:58:51:30:B2:1F:28:68:6B;com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons
+
+    Alternatively, follow the directions here:
+    https://developers.google.com/maps/documentation/android/start#get-key
+
+    Once you have your key (it starts with "AIza"), replace the "google_maps_key"
+    string in this file.
+    -->
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">
+        AIzaSyAuOW532SyK0k2E_ARd4jB_YsASoUpGK6c
+
+    </string>
+</resources>

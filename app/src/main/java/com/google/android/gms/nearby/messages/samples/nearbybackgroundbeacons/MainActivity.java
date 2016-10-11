@@ -118,40 +118,40 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 			mNearbyMessagesList.addAll(cachedMessages);
 		}
 
-		nearbyMessagesListView = (ListView) findViewById(R.id.nearby_messages_list_view);
-		mNearbyMessagesArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mNearbyMessagesList);
-		if (nearbyMessagesListView != null) {
-			nearbyMessagesListView.setAdapter(mNearbyMessagesArrayAdapter);
-		}
-
-		if (!havePermissions()) {
-			Log.i(TAG, "Requesting permissions needed for this app.");
-			requestPermissions();
-		}
-
-        // nearbyMessagesListView Item Click Listener
-        nearbyMessagesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view,
-                                    int position, long id) {
-
-                // ListView Clicked item index
-                int itemPosition     = position;
-
-                // ListView Clicked item value
-                String  itemValue    = (String) nearbyMessagesListView.getItemAtPosition(position);
-
-                // Show Alert
-                Toast.makeText(getApplicationContext(),
-                        "Position :"+itemPosition+"  ListItem : " +itemValue , Toast.LENGTH_LONG)
-                        .show();
-                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
-                startActivity(intent);
-
-            }
-
-        });
+//		nearbyMessagesListView = (ListView) findViewById(R.id.nearby_messages_list_view);
+//		mNearbyMessagesArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mNearbyMessagesList);
+//		if (nearbyMessagesListView != null) {
+//			nearbyMessagesListView.setAdapter(mNearbyMessagesArrayAdapter);
+//		}
+//
+//		if (!havePermissions()) {
+//			Log.i(TAG, "Requesting permissions needed for this app.");
+//			requestPermissions();
+//		}
+//
+//        // nearbyMessagesListView Item Click Listener
+//        nearbyMessagesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view,
+//                                    int position, long id) {
+//
+//                // ListView Clicked item index
+//                int itemPosition     = position;
+//
+//                // ListView Clicked item value
+//                String  itemValue    = (String) nearbyMessagesListView.getItemAtPosition(position);
+//
+//                // Show Alert
+//                Toast.makeText(getApplicationContext(),
+//                        "Position :"+itemPosition+"  ListItem : " +itemValue , Toast.LENGTH_LONG)
+//                        .show();
+//                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+//                startActivity(intent);
+//
+//            }
+//
+//        });
 
         // Empty list for storing geofences.
         mGeofenceList = new ArrayList<Geofence>();
@@ -200,6 +200,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 	@Override
 	protected void onResume() {
 		super.onResume();
+        if (BackgroundSubscribeIntentService.IsNotificationOn || false){
+            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+            startActivity(intent);
+        }
 
 		getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
 
@@ -289,6 +293,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
         if (mGoogleApiClient.isConnected()){
             addGeofences();
+        }
+
+        if (BackgroundSubscribeIntentService.IsNotificationOn || false){
+            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+            startActivity(intent);
         }
 	}
 

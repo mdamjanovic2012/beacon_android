@@ -31,6 +31,7 @@ import android.util.Log;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.MainActivity;
+import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.MapsActivity;
 import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.R;
 
 import java.util.ArrayList;
@@ -133,7 +134,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
      */
     private void sendNotification(String notificationDetails) {
         // Create an explicit content Intent that starts the main Activity.
-        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+        Intent notificationIntent = new Intent(getApplicationContext(), MapsActivity.class);
 
         // Construct a task stack.
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);

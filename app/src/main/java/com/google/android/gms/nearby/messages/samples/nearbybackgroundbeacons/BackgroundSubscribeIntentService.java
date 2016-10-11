@@ -22,9 +22,11 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.messages.Message;
@@ -48,6 +50,7 @@ public class BackgroundSubscribeIntentService extends IntentService {
 	public BackgroundSubscribeIntentService() {
 		super("BackgroundSubscribeIntentService");
 	}
+    public static boolean IsNotificationOn = false;
 
 	@Override
 	public void onCreate() {
@@ -84,13 +87,14 @@ public class BackgroundSubscribeIntentService extends IntentService {
 					Log.d("CONTENT", "content: " + new String(message.getContent()));
 					Log.d("CONTENT", "namespace: " + new String(message.getNamespace()));
 					Log.d("CONTENT", "type: " + new String(message.getType()));
-
+                    IsNotificationOn = true;
 					updateNotification();
 				}
 
 				@Override
 				public void onLost(Message message) {
 					Utils.removeLostMessage(getApplicationContext(), message);
+                    IsNotificationOn = false;
 					updateNotification();
 				}
 			});
@@ -98,18 +102,17 @@ public class BackgroundSubscribeIntentService extends IntentService {
 	}
 
 	private void updateNotification() {
-		List<String> messages = Utils.getCachedMessages(getApplicationContext());
-		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		Intent launchIntent = new Intent(getApplicationContext(), MainActivity.class);
-		launchIntent.setAction(Intent.ACTION_MAIN);
-		launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-		String contentTitle = getContentTitle(messages);
-		String contentText = getContentText(messages);
-
-		NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this).setSmallIcon(android.R.drawable.star_on).setContentTitle(contentTitle).setContentText(contentText).setStyle(new NotificationCompat.BigTextStyle().bigText(contentText)).setOngoing(false).setContentIntent(pi);
-		notificationManager.notify(MESSAGES_NOTIFICATION_ID, notificationBuilder.build());
+//		List<String> messages = Utils.getCachedMessages(getApplicationContext());
+//		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//		Intent launchIntent = new Intent(getApplicationContext(), MainActivity.class);
+//		launchIntent.setAction(Intent.ACTION_MAIN);
+//		launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+//		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+//		String contentTitle = getContentTitle(messages);
+//		String contentText = getContentText(messages);
+//
+//		NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this).setSmallIcon(android.R.drawable.star_on).setContentTitle(contentTitle).setContentText(contentText).setStyle(new NotificationCompat.BigTextStyle().bigText(contentText)).setOngoing(false).setContentIntent(pi);
+//		notificationManager.notify(MESSAGES_NOTIFICATION_ID, notificationBuilder.build());
 	}
 
 	private String getContentTitle(List<String> messages) {

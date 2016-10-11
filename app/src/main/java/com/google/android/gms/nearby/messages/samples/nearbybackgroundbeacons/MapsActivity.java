@@ -66,6 +66,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+    FloatingActionButton couponButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +84,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        FloatingActionButton couponButton = (FloatingActionButton) findViewById(R.id.fab);
+        couponButton = (FloatingActionButton) findViewById(R.id.fab);
         couponButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -155,7 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             FetchUrl.execute(url);
             //move map camera
             mMap.moveCamera(CameraUpdateFactory.newLatLng(origin));
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(2));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(16));
         }
 
         // Setting onclick event listener for the map
@@ -327,7 +328,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected String doInBackground(String... url) {
-
             // For storing data from web service
             String data = "";
 
@@ -462,6 +462,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mCurrLocationMarker != null) {
             mCurrLocationMarker.remove();
         }
+        if (BackgroundSubscribeIntentService.IsNotificationOn){
+            couponButton.setVisibility(View.VISIBLE);
+        }
 
         //Place current location marker
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -470,7 +473,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         markerOptions.title("Current Position");
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
         mCurrLocationMarker = mMap.addMarker(markerOptions);
-
+        mCurrLocationMarker.setVisible(false);
 
         LatLng origin = latLng;
         LatLng dest = Constants.BAY_AREA_LANDMARKS.get("GOOGLE");
@@ -490,7 +493,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(4));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(18));
     }
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
