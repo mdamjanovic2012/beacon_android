@@ -56,6 +56,6 @@ public final class Constants {
         BAY_AREA_LANDMARKS.put("SFO", new LatLng(37.621313, -122.378955));
 
         // Googleplex.
-        BAY_AREA_LANDMARKS.put("GOOGLE", new LatLng(44.9004385,20.2575243));
+        BAY_AREA_LANDMARKS.put("GOOGLE", new LatLng(44.9055756,20.2755487));
     }
 }

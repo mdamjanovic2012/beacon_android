@@ -146,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Toast.makeText(getApplicationContext(),
                         "Position :"+itemPosition+"  ListItem : " +itemValue , Toast.LENGTH_LONG)
                         .show();
+                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+                startActivity(intent);
 
             }
 
