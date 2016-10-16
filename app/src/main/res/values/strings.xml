@@ -74,4 +74,11 @@
 
     <string name="geofence_transition_notification_text">Click notification to return to app</string>
     <string name="title_activity_maps">Map</string>
+
+    <string name="action_hide">Hide Panel</string>
+    <string name="action_show">Show Panel</string>
+    <string name="action_anchor_enable">Enable Anchor Point</string>
+    <string name="action_anchor_disable">Disable Anchor Point</string>
+    <string name="hello"><![CDATA[<b>CLAIM YOUR COUPON!</b><br/> Slide up to see your coupon.<br/>]]></string>
+    <string name="follow"><![CDATA[Follow us<br/>on <a href="http://twitter.com/blabla">Twitter</a>]]></string>
 </resources>

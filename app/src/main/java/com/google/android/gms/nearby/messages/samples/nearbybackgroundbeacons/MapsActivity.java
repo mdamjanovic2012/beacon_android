@@ -1,7 +1,10 @@
 package com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -10,20 +13,25 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.bmilos.library.SlidingUpPanelLayout;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -37,6 +45,9 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.geoloc.DataParser;
+import com.example.bmilos.library.SlidingUpPanelLayout.PanelSlideListener;
+import com.example.bmilos.library.SlidingUpPanelLayout.PanelState;
+import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.geoloc.GeofenceTransitionsIntentService;
 
 import org.json.JSONObject;
 
@@ -56,6 +67,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LocationListener {
 
     private GoogleMap mMap;
+    SlidingUpPanelLayout mLayout;
     ArrayList<LatLng> MarkerPoints;
     GoogleApiClient mGoogleApiClient;
     Location mLastLocation;
@@ -66,7 +78,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
-    FloatingActionButton couponButton;
+    public TextView textView;
+    public Button followButton;
+    public View slider;
+    public View wrapper_slide;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,18 +99,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        couponButton = (FloatingActionButton) findViewById(R.id.fab);
-        couponButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MapsActivity.this, CouponActivity.class);
-                startActivity(intent);
-            }
-        });
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        mLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        mLayout.addPanelSlideListener(new PanelSlideListener() {
+            @Override
+            public void onPanelSlide(View panel, float slideOffset) {
+                Log.i("info", "onPanelSlide, offset " + slideOffset);
+            }
+
+            @Override
+            public void onPanelStateChanged(View panel, PanelState previousState, PanelState newState) {
+                Log.i("info", "onPanelStateChanged " + newState);
+            }
+        });
+        mLayout.setFadeOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mLayout.setPanelState(PanelState.COLLAPSED);
+            }
+        });
+
+        textView = (TextView) findViewById(R.id.name);
+        textView.setText(Html.fromHtml(getString(R.string.hello)));
+        followButton = (Button) findViewById(R.id.follow);
+        followButton.setText(Html.fromHtml(getString(R.string.follow)));
+        followButton.setMovementMethod(LinkMovementMethod.getInstance());
+        followButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse("http://www.twitter.com/umanoapp"));
+                startActivity(i);
+            }
+        });
+        slider = findViewById(R.id.slider_wrapper);
+        textView.setVisibility(View.GONE);
+        followButton.setVisibility(View.GONE);
+        slider.setVisibility(View.GONE);
+        wrapper_slide = findViewById(R.id.activity_coupon);
+        wrapper_slide.setVisibility(View.GONE);
     }
 
     /**
@@ -346,18 +391,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             super.onPostExecute(result);
 
             ParserTask parserTask = new ParserTask();
-
             // Invokes the thread for parsing the JSON data
             parserTask.execute(result);
 
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        startService(new Intent(this, GeofenceTransitionsIntentService.class)); // add this line
+    }
+
     /**
      * A class to parse the Google Places in JSON format
      */
     private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
-
         // Parsing the data in non-ui thread
         @Override
         protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
@@ -434,10 +483,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .build();
         mGoogleApiClient.connect();
     }
-
     @Override
     public void onConnected(Bundle bundle) {
-
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
@@ -458,12 +505,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onLocationChanged(Location location) {
 
+
         mLastLocation = location;
         if (mCurrLocationMarker != null) {
             mCurrLocationMarker.remove();
         }
         if (BackgroundSubscribeIntentService.IsNotificationOn){
-            couponButton.setVisibility(View.VISIBLE);
+            Activity act = MapsActivity.this;
+            act.runOnUiThread(new Runnable(){
+                @Override
+                public void run() {
+                    wrapper_slide.setVisibility(View.VISIBLE);
+                    slider.setVisibility(View.VISIBLE);
+                    followButton.setVisibility(View.VISIBLE);
+                    textView.setVisibility(View.VISIBLE);
+
+                } });
         }
 
         //Place current location marker
@@ -476,7 +533,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mCurrLocationMarker.setVisible(false);
 
         LatLng origin = latLng;
-        LatLng dest = Constants.BAY_AREA_LANDMARKS.get("GOOGLE");
+        LatLng dest = Constants.BAY_AREA_LANDMARKS.get("SFO");
         MarkerOptions markerOptionsD = new MarkerOptions();
         markerOptionsD.position(dest);
         markerOptionsD.title("Destin Position");

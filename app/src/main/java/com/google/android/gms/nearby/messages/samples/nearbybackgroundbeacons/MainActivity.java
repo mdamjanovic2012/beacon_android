@@ -17,6 +17,7 @@
 package com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -68,55 +69,64 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static android.R.attr.data;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, SharedPreferences.OnSharedPreferenceChangeListener,  ResultCallback<Status> {
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, SharedPreferences.OnSharedPreferenceChangeListener, ResultCallback<Status> {
 
-		execute();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-		if (savedInstanceState != null) {
-			mSubscribed = savedInstanceState.getBoolean(KEY_SUBSCRIBED, false);
-		}
-	}
+        execute();
 
-	private void execute() {
-		if (!locationServicesEnabled() && isFirstTime()) {
-			showDialog();
-			return;
-		}
+        if (savedInstanceState != null) {
+            mSubscribed = savedInstanceState.getBoolean(KEY_SUBSCRIBED, false);
+        }
 
-		continueOnCreate();
-	}
+    }
 
-	/**
-	 * Show entrance dialog.
-	 */
-	private void showDialog() {
-		new Dialog(MainActivity.this, new Dialog.OnLocationEnabled() {
+    private void execute() {
+        if (!locationServicesEnabled() && isFirstTime()) {
+            showDialog();
+            return;
+        }
 
-			@Override
-			public void onLocationEnabled() {
-				execute();
-			}
-		});
-	}
+        continueOnCreate();
+    }
 
-	/**
-	 * On create method.
-	 */
-	private void continueOnCreate() {
-		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-		setSupportActionBar(toolbar);
+    /**
+     * Show entrance dialog.
+     */
+    private void showDialog() {
+        new Dialog(MainActivity.this, new Dialog.OnLocationEnabled() {
 
-		mContainer = (RelativeLayout) findViewById(R.id.main_activity_container);
-		final List<String> cachedMessages = Utils.getCachedMessages(this);
-		if (cachedMessages != null) {
-			mNearbyMessagesList.addAll(cachedMessages);
-		}
+            @Override
+            public void onLocationEnabled() {
+                execute();
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        startService(new Intent(this, GeofenceTransitionsIntentService.class)); // add this line
+    }
+
+    /**
+     * On create method.
+     */
+    private void continueOnCreate() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        mContainer = (RelativeLayout) findViewById(R.id.main_activity_container);
+        final List<String> cachedMessages = Utils.getCachedMessages(this);
+        if (cachedMessages != null) {
+            mNearbyMessagesList.addAll(cachedMessages);
+        }
 
 //		nearbyMessagesListView = (ListView) findViewById(R.id.nearby_messages_list_view);
 //		mNearbyMessagesArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mNearbyMessagesList);
@@ -173,89 +183,89 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         // Kick off the request to build GoogleApiClient.
         buildGoogleApiClient();
 
-	}
+    }
 
-	/**
-	 * Checks if location services are enabled.
-	 *
-	 * @return True if location services are enabled, false otherwise.
-	 */
-	private boolean locationServicesEnabled() {
-		LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		boolean gpsEnabled = false;
-		boolean networkEnabled = false;
+    /**
+     * Checks if location services are enabled.
+     *
+     * @return True if location services are enabled, false otherwise.
+     */
+    private boolean locationServicesEnabled() {
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        boolean gpsEnabled = false;
+        boolean networkEnabled = false;
 
-		try {
-			gpsEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-		} catch (Exception ex) {
-		}
-		try {
-			networkEnabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-		} catch (Exception ex) {
-		}
+        try {
+            gpsEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+        }
+        try {
+            networkEnabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+        }
 
-		return gpsEnabled && networkEnabled;
-	}
+        return gpsEnabled && networkEnabled;
+    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-        if (BackgroundSubscribeIntentService.IsNotificationOn || false){
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (BackgroundSubscribeIntentService.IsNotificationOn) {
             Intent intent = new Intent(MainActivity.this, MapsActivity.class);
             startActivity(intent);
         }
 
-		getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
+        getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
 
-		// As part of the permissions workflow, check permissions in case the user has gone to
-		// Settings and enabled location there. If permissions are adequate, kick off a subscription
-		// process by building GoogleApiClient.
-		if (havePermissions()) {
-			buildGoogleApiClient();
-		}
-	}
+        // As part of the permissions workflow, check permissions in case the user has gone to
+        // Settings and enabled location there. If permissions are adequate, kick off a subscription
+        // process by building GoogleApiClient.
+        if (havePermissions()) {
+            buildGoogleApiClient();
+        }
+    }
 
-	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-		if (requestCode != PERMISSIONS_REQUEST_CODE) {
-			return;
-		}
-		for (int i = 0; i < permissions.length; i++) {
-			String permission = permissions[i];
-			if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-				// There are states to watch when a user denies permission when presented with
-				// the Nearby permission dialog: 1) When the user pressed "Deny", but does not
-				// check the "Never ask again" option. In this case, we display a Snackbar which
-				// lets the user kick off the permissions flow again. 2) When the user pressed
-				// "Deny" and also checked the "Never ask again" option. In this case, the
-				// permission dialog will no longer be presented to the user. The user may still
-				// want to authorize location and use the app, and we present a Snackbar that
-				// directs them to go to Settings where they can grant the location permission.
-				if (shouldShowRequestPermissionRationale(permission)) {
-					Log.i(TAG, "Permission denied without 'NEVER ASK AGAIN': " + permission);
-					showRequestPermissionsSnackbar();
-				} else {
-					Log.i(TAG, "Permission denied with 'NEVER ASK AGAIN': " + permission);
-					showLinkToSettingsSnackbar();
-				}
-			} else {
-				Log.i(TAG, "Permission granted, building GoogleApiClient");
-				buildGoogleApiClient();
-			}
-		}
-	}
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode != PERMISSIONS_REQUEST_CODE) {
+            return;
+        }
+        for (int i = 0; i < permissions.length; i++) {
+            String permission = permissions[i];
+            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                // There are states to watch when a user denies permission when presented with
+                // the Nearby permission dialog: 1) When the user pressed "Deny", but does not
+                // check the "Never ask again" option. In this case, we display a Snackbar which
+                // lets the user kick off the permissions flow again. 2) When the user pressed
+                // "Deny" and also checked the "Never ask again" option. In this case, the
+                // permission dialog will no longer be presented to the user. The user may still
+                // want to authorize location and use the app, and we present a Snackbar that
+                // directs them to go to Settings where they can grant the location permission.
+                if (shouldShowRequestPermissionRationale(permission)) {
+                    Log.i(TAG, "Permission denied without 'NEVER ASK AGAIN': " + permission);
+                    showRequestPermissionsSnackbar();
+                } else {
+                    Log.i(TAG, "Permission denied with 'NEVER ASK AGAIN': " + permission);
+                    showLinkToSettingsSnackbar();
+                }
+            } else {
+                Log.i(TAG, "Permission granted, building GoogleApiClient");
+                buildGoogleApiClient();
+            }
+        }
+    }
 
-	/**
-	 * Builds {@link GoogleApiClient}, enabling automatic lifecycle management using
-	 * {@link GoogleApiClient.Builder#enableAutoManage(FragmentActivity,
-	 * int, GoogleApiClient.OnConnectionFailedListener)}. I.e., GoogleApiClient connects in
-	 * {@link AppCompatActivity#onStart} -- or if onStart() has already happened -- it connects
-	 * immediately, and disconnects automatically in {@link AppCompatActivity#onStop}.
-	 */
-	private synchronized void buildGoogleApiClient() {
-		if (mGoogleApiClient == null) {
-			mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Nearby.MESSAGES_API, new MessagesOptions.Builder().setPermissions(NearbyPermissions.BLE).build()).addConnectionCallbacks(this).enableAutoManage(this, this).build();
-		}
+    /**
+     * Builds {@link GoogleApiClient}, enabling automatic lifecycle management using
+     * {@link GoogleApiClient.Builder#enableAutoManage(FragmentActivity,
+     * int, GoogleApiClient.OnConnectionFailedListener)}. I.e., GoogleApiClient connects in
+     * {@link AppCompatActivity#onStart} -- or if onStart() has already happened -- it connects
+     * immediately, and disconnects automatically in {@link AppCompatActivity#onStop}.
+     */
+    private synchronized void buildGoogleApiClient() {
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Nearby.MESSAGES_API, new MessagesOptions.Builder().setPermissions(NearbyPermissions.BLE).build()).addConnectionCallbacks(this).enableAutoManage(this, this).build();
+        }
         if (geoGoogleApiClient == null) {
             geoGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -265,39 +275,75 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-	@Override
-	protected void onPause() {
-		getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(this);
-		super.onPause();
-	}
+    @Override
+    protected void onPause() {
+        getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(this);
+        super.onPause();
+    }
 
-	@Override
-	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-		if (mContainer != null) {
-			Snackbar.make(mContainer, "Exception while connecting to Google Play services: " + connectionResult.getErrorMessage(), Snackbar.LENGTH_INDEFINITE).show();
-		}
-	}
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        if (mContainer != null) {
+            Snackbar.make(mContainer, "Exception while connecting to Google Play services: " + connectionResult.getErrorMessage(), Snackbar.LENGTH_INDEFINITE).show();
+        }
+    }
 
-	@Override
-	public void onConnectionSuspended(int i) {
-		Log.w(TAG, "Connection suspended. Error code: " + i);
-	}
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.w(TAG, "Connection suspended. Error code: " + i);
+    }
 
-	@Override
-	public void onConnected(@Nullable Bundle bundle) {
-		Log.i(TAG, "GoogleApiClient connected");
-		// Nearby.Messages.subscribe(...) requires a connected GoogleApiClient. For that reason,
-		// we subscribe only once we have confirmation that GoogleApiClient is connected.
-        if (mGoogleApiClient.isConnected()){
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Log.i(TAG, "GoogleApiClient connected");
+        // Nearby.Messages.subscribe(...) requires a connected GoogleApiClient. For that reason,
+        // we subscribe only once we have confirmation that GoogleApiClient is connected.
+        if (mGoogleApiClient.isConnected()) {
             subscribe();
         }
-        if (mGoogleApiClient.isConnected()){
+        if (mGoogleApiClient.isConnected()) {
             addGeofences();
         }
 
-        if (BackgroundSubscribeIntentService.IsNotificationOn || false){
+        if (BackgroundSubscribeIntentService.IsNotificationOn || false) {
             Intent intent = new Intent(MainActivity.this, MapsActivity.class);
             startActivity(intent);
+        }
+
+        Log.i(TAG, "Connected to GoogleApiClient");
+        SharedPreferences sharedPrefs = MainActivity.this.getSharedPreferences("GEO_PREFS", Context.MODE_PRIVATE);
+        String geofencesExist = sharedPrefs.getString("Geofences added", null);
+
+        if (geofencesExist == null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            LocationServices.GeofencingApi.addGeofences(
+                    geoGoogleApiClient,
+                    // The GeofenceRequest object.
+                    getGeofencingRequest(),
+                    // A pending intent that that is reused when calling removeGeofences(). This
+                    // pending intent is used to generate an intent when a matched geofence
+                    // transition is observed.
+                    getGeofencePendingIntent()
+            ).setResultCallback(new ResultCallback<Status>() {
+                @Override
+                public void onResult(Status status) {
+                    if (status.isSuccess()) {
+                        SharedPreferences sharedPrefs = MainActivity.this.getSharedPreferences("GEO_PREFS", Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPrefs.edit();
+                        editor.putString("Geofences added", "1");
+                        editor.commit();
+                    }
+                }
+            });
         }
 	}
 
@@ -346,6 +392,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 				if (status.isSuccess()) {
 					Log.i(TAG, "Subscribed successfully.");
 					startService(getBackgroundSubscribeServiceIntent());
+
 				} else {
 					Log.e(TAG, "Operation failed. Error: " + NearbyMessagesStatusCodes.getStatusCodeString(status.getStatusCode()));
 				}
@@ -500,6 +547,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             R.string.geofences_removed),
                     Toast.LENGTH_SHORT
             ).show();
+
         } else {
             // Get the status code for the error and log it using a user-friendly message.
             String errorMessage = GeofenceErrorMessages.getErrorString(this,
@@ -533,6 +581,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             logSecurityException(securityException);
         }
     }
+
 
     /**
      * Builds and returns a GeofencingRequest. Specifies the list of geofences to be monitored.

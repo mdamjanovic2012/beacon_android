@@ -27,7 +27,7 @@ public final class Constants {
 
     private Constants() {
     }
-
+    public static final int CONNECTION_FAILURE_RESOLUTION_REQUEST = 10;
     public static final String PACKAGE_NAME = "com.google.android.gms.location.Geofence";
 
     public static final String SHARED_PREFERENCES_NAME = PACKAGE_NAME + ".SHARED_PREFERENCES_NAME";
@@ -53,9 +53,9 @@ public final class Constants {
     public static final HashMap<String, LatLng> BAY_AREA_LANDMARKS = new HashMap<String, LatLng>();
     static {
         // San Francisco International Airport.
-        BAY_AREA_LANDMARKS.put("SFO", new LatLng(37.621313, -122.378955));
+        BAY_AREA_LANDMARKS.put("SFO", new LatLng(44.8999825,20.2540589));
 
         // Googleplex.
-        BAY_AREA_LANDMARKS.put("GOOGLE", new LatLng(44.9055756,20.2755487));
+        BAY_AREA_LANDMARKS.put("GOOGLE", new LatLng(44.795369,20.494069));
     }
 }

@@ -16,13 +16,20 @@
 
 package com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.geoloc;
 
+import android.app.AlarmManager;
 import android.app.IntentService;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.SystemClock;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.text.TextUtils;
@@ -44,17 +51,18 @@ import java.util.List;
  * the transition type and geofence id(s) that triggered the transition. Creates a notification
  * as the output.
  */
-public class GeofenceTransitionsIntentService extends IntentService {
+public class GeofenceTransitionsIntentService extends Service {
 
     protected static final String TAG = "GeofenceTransitionsIS";
-
+    private int mInterval = 9000; // 5 seconds by default, can be changed later
+    private Handler mHandler;
+    private Intent intent = null;
     /**
      * This constructor is required, and calls the super IntentService(String)
      * constructor with the name for a worker thread.
      */
     public GeofenceTransitionsIntentService() {
         // Use the TAG to name the worker thread.
-        super(TAG);
     }
 
     @Override
@@ -62,45 +70,84 @@ public class GeofenceTransitionsIntentService extends IntentService {
         super.onCreate();
     }
 
-    /**
-     * Handles incoming intents.
-     * @param intent sent by Location Services. This Intent is provided to Location
-     *               Services (inside a PendingIntent) when addGeofences() is called.
-     */
     @Override
-    protected void onHandleIntent(Intent intent) {
-        GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
-        if (geofencingEvent.hasError()) {
-            String errorMessage = GeofenceErrorMessages.getErrorString(this,
-                    geofencingEvent.getErrorCode());
-            Log.e(TAG, errorMessage);
-            return;
+    public int onStartCommand(Intent intent, int flags, int startId){
+        mHandler = new Handler();
+        startRepeatingTask();
+        this.intent = intent;
+
+        return START_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    Runnable mStatusChecker = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (GeofenceTransitionsIntentService.this.intent == null){
+                    return;
+                }
+                GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(GeofenceTransitionsIntentService.this.intent);
+                if (geofencingEvent.hasError()) {
+                    String errorMessage = GeofenceErrorMessages.getErrorString(GeofenceTransitionsIntentService.this,
+                            geofencingEvent.getErrorCode());
+                    Log.e(TAG, errorMessage);
+                    return ;
+                }
+
+                // Get the transition type.
+                int geofenceTransition = geofencingEvent.getGeofenceTransition();
+
+                // Test that the reported transition was of interest.
+                if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
+                        geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+
+                    // Get the geofences that were triggered. A single event can trigger multiple geofences.
+                    List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+
+                    // Get the transition details as a String.
+                    String geofenceTransitionDetails = getGeofenceTransitionDetails(
+                            GeofenceTransitionsIntentService.this,
+                            geofenceTransition,
+                            triggeringGeofences
+                    );
+
+                    // Send notification and log the transition details.
+                    sendNotification(geofenceTransitionDetails);
+                    Log.i(TAG, geofenceTransitionDetails);
+                } else {
+                    // Log the error.
+                    Log.e(TAG, getString(R.string.geofence_transition_invalid_type, geofenceTransition));
+                }
+            } finally {
+                // 100% guarantee that this always happens, even if
+                // your update method throws an exception
+                mHandler.postDelayed(mStatusChecker, mInterval);
+            }
         }
+    };
 
-        // Get the transition type.
-        int geofenceTransition = geofencingEvent.getGeofenceTransition();
+    void startRepeatingTask() {
+        mStatusChecker.run();
+    }
 
-        // Test that the reported transition was of interest.
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
-                geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+    @Override
+    public void onTaskRemoved(Intent rootIntent){
+        Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
+        restartServiceIntent.setPackage(getPackageName());
 
-            // Get the geofences that were triggered. A single event can trigger multiple geofences.
-            List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+        PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        alarmService.set(
+                AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime() + 1000,
+                restartServicePendingIntent);
 
-            // Get the transition details as a String.
-            String geofenceTransitionDetails = getGeofenceTransitionDetails(
-                    this,
-                    geofenceTransition,
-                    triggeringGeofences
-            );
-
-            // Send notification and log the transition details.
-            sendNotification(geofenceTransitionDetails);
-            Log.i(TAG, geofenceTransitionDetails);
-        } else {
-            // Log the error.
-            Log.e(TAG, getString(R.string.geofence_transition_invalid_type, geofenceTransition));
-        }
+        super.onTaskRemoved(rootIntent);
     }
 
     /**
@@ -172,6 +219,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
         // Issue the notification
         mNotificationManager.notify(0, builder.build());
+//        startForeground(1, builder.build());
+//        stopForeground(true);
     }
 
     /**
