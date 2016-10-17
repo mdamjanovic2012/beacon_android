@@ -38,8 +38,8 @@ import android.util.Log;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.MainActivity;
-import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.MapsActivity;
 import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.R;
+import com.google.android.gms.nearby.messages.samples.nearbybackgroundbeacons.RouteMapActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,11 +77,6 @@ public class GeofenceTransitionsIntentService extends Service {
         this.intent = intent;
 
         return START_STICKY;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 
     Runnable mStatusChecker = new Runnable() {
@@ -137,19 +132,30 @@ public class GeofenceTransitionsIntentService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent){
-        Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
-        restartServiceIntent.setPackage(getPackageName());
-
-        PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
-        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
-        alarmService.set(
-                AlarmManager.ELAPSED_REALTIME,
-                SystemClock.elapsedRealtime() + 1000,
-                restartServicePendingIntent);
+//        Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
+//        restartServiceIntent.setPackage(getPackageName());
+//
+//        PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
+//        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+//        alarmService.set(
+//                AlarmManager.ELAPSED_REALTIME,
+//                SystemClock.elapsedRealtime() + 1000,
+//                restartServicePendingIntent);
 
         super.onTaskRemoved(rootIntent);
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+//    @Override
+//    public IBinder onBind(Intent intent) {
+//        // This won't be a bound service, so simply return null
+//        return null;
+//    }
     /**
      * Gets transition details and returns them as a formatted string.
      *
@@ -181,7 +187,7 @@ public class GeofenceTransitionsIntentService extends Service {
      */
     private void sendNotification(String notificationDetails) {
         // Create an explicit content Intent that starts the main Activity.
-        Intent notificationIntent = new Intent(getApplicationContext(), MapsActivity.class);
+        Intent notificationIntent = new Intent(getApplicationContext(), RouteMapActivity.class);
 
         // Construct a task stack.
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
@@ -218,7 +224,7 @@ public class GeofenceTransitionsIntentService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         // Issue the notification
-        mNotificationManager.notify(0, builder.build());
+        mNotificationManager.notify(1, builder.setAutoCancel(true).build());
 //        startForeground(1, builder.build());
 //        stopForeground(true);
     }

@@ -81,4 +81,5 @@
     <string name="action_anchor_disable">Disable Anchor Point</string>
     <string name="hello"><![CDATA[<b>CLAIM YOUR COUPON!</b><br/> Slide up to see your coupon.<br/>]]></string>
     <string name="follow"><![CDATA[Follow us<br/>on <a href="http://twitter.com/blabla">Twitter</a>]]></string>
+    <string name="title_activity_route_map">RouteMapActivity</string>
 </resources>

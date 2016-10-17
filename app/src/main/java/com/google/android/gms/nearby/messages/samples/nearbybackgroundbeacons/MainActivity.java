@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected void onResume() {
         super.onResume();
         if (BackgroundSubscribeIntentService.IsNotificationOn) {
-            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+            Intent intent = new Intent(MainActivity.this, RouteMapActivity.class);
             startActivity(intent);
         }
 
@@ -306,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
 
         if (BackgroundSubscribeIntentService.IsNotificationOn || false) {
-            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+            Intent intent = new Intent(MainActivity.this, RouteMapActivity.class);
             startActivity(intent);
         }
 
@@ -345,138 +345,138 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 }
             });
         }
-	}
+    }
 
-	@Override
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-		if (TextUtils.equals(key, Utils.KEY_CACHED_MESSAGES)) {
-			mNearbyMessagesList.clear();
-			mNearbyMessagesList.addAll(Utils.getCachedMessages(this));
-			mNearbyMessagesArrayAdapter.notifyDataSetChanged();
-		}
-	}
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (TextUtils.equals(key, Utils.KEY_CACHED_MESSAGES)) {
+            mNearbyMessagesList.clear();
+            mNearbyMessagesList.addAll(Utils.getCachedMessages(this));
+            mNearbyMessagesArrayAdapter.notifyDataSetChanged();
+        }
+    }
 
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putBoolean(KEY_SUBSCRIBED, mSubscribed);
-	}
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_SUBSCRIBED, mSubscribed);
+    }
 
-	private boolean havePermissions() {
-		return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-	}
+    private boolean havePermissions() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
 
-	private void requestPermissions() {
-		ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
-	}
+    private void requestPermissions() {
+        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
+    }
 
-	/**
-	 * Calls {@link Messages#subscribe(GoogleApiClient, MessageListener, SubscribeOptions)},
-	 * using a {@link Strategy} for BLE scanning. Attaches a {@link ResultCallback} to monitor
-	 * whether the call to {@code subscribe()} succeeded or failed.
-	 */
-	private void subscribe() {
-		// In this sample, we subscribe when the activity is launched, but not on device orientation
-		// change.
-		if (mSubscribed) {
-			Log.i(TAG, "Already subscribed.");
-			return;
-		}
+    /**
+     * Calls {@link Messages#subscribe(GoogleApiClient, MessageListener, SubscribeOptions)},
+     * using a {@link Strategy} for BLE scanning. Attaches a {@link ResultCallback} to monitor
+     * whether the call to {@code subscribe()} succeeded or failed.
+     */
+    private void subscribe() {
+        // In this sample, we subscribe when the activity is launched, but not on device orientation
+        // change.
+        if (mSubscribed) {
+            Log.i(TAG, "Already subscribed.");
+            return;
+        }
 
-		SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(Strategy.BLE_ONLY).build();
+        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(Strategy.BLE_ONLY).build();
 
-		Nearby.Messages.subscribe(mGoogleApiClient, getPendingIntent(), options).setResultCallback(new ResultCallback<Status>() {
+        Nearby.Messages.subscribe(mGoogleApiClient, getPendingIntent(), options).setResultCallback(new ResultCallback<Status>() {
 
-			@Override
-			public void onResult(@NonNull Status status) {
-				if (status.isSuccess()) {
-					Log.i(TAG, "Subscribed successfully.");
-					startService(getBackgroundSubscribeServiceIntent());
+            @Override
+            public void onResult(@NonNull Status status) {
+                if (status.isSuccess()) {
+                    Log.i(TAG, "Subscribed successfully.");
+                    startService(getBackgroundSubscribeServiceIntent());
 
-				} else {
-					Log.e(TAG, "Operation failed. Error: " + NearbyMessagesStatusCodes.getStatusCodeString(status.getStatusCode()));
-				}
-			}
-		});
-	}
+                } else {
+                    Log.e(TAG, "Operation failed. Error: " + NearbyMessagesStatusCodes.getStatusCodeString(status.getStatusCode()));
+                }
+            }
+        });
+    }
 
-	private PendingIntent getPendingIntent() {
-		return PendingIntent.getService(this, 0, getBackgroundSubscribeServiceIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
-	}
+    private PendingIntent getPendingIntent() {
+        return PendingIntent.getService(this, 0, getBackgroundSubscribeServiceIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
+    }
 
-	private Intent getBackgroundSubscribeServiceIntent() {
-		return new Intent(this, BackgroundSubscribeIntentService.class);
-	}
+    private Intent getBackgroundSubscribeServiceIntent() {
+        return new Intent(this, BackgroundSubscribeIntentService.class);
+    }
 
-	/**
-	 * Displays {@link Snackbar} instructing user to visit Settings to grant permissions required
-	 * by
-	 * this application.
-	 */
-	private void showLinkToSettingsSnackbar() {
-		if (mContainer == null) {
-			return;
-		}
-		Snackbar.make(mContainer, R.string.permission_denied_explanation, Snackbar.LENGTH_INDEFINITE).setAction(R.string.settings, new View.OnClickListener() {
+    /**
+     * Displays {@link Snackbar} instructing user to visit Settings to grant permissions required
+     * by
+     * this application.
+     */
+    private void showLinkToSettingsSnackbar() {
+        if (mContainer == null) {
+            return;
+        }
+        Snackbar.make(mContainer, R.string.permission_denied_explanation, Snackbar.LENGTH_INDEFINITE).setAction(R.string.settings, new View.OnClickListener() {
 
-			@Override
-			public void onClick(View view) {
+            @Override
+            public void onClick(View view) {
 
-				// Build intent that displays the App settings screen.
-				Intent intent = new Intent();
-				intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-				Uri uri = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null);
-				intent.setData(uri);
-				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				startActivity(intent);
-			}
-		}).show();
-	}
+                // Build intent that displays the App settings screen.
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                Uri uri = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null);
+                intent.setData(uri);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        }).show();
+    }
 
-	/**
-	 * Displays {@link Snackbar} with button for the user to re-initiate the permission workflow.
-	 */
-	private void showRequestPermissionsSnackbar() {
-		if (mContainer == null) {
-			return;
-		}
+    /**
+     * Displays {@link Snackbar} with button for the user to re-initiate the permission workflow.
+     */
+    private void showRequestPermissionsSnackbar() {
+        if (mContainer == null) {
+            return;
+        }
 
-		Snackbar.make(mContainer, R.string.permission_rationale, Snackbar.LENGTH_INDEFINITE).setAction(R.string.ok, new View.OnClickListener() {
+        Snackbar.make(mContainer, R.string.permission_rationale, Snackbar.LENGTH_INDEFINITE).setAction(R.string.ok, new View.OnClickListener() {
 
-			@Override
-			public void onClick(View view) {
+            @Override
+            public void onClick(View view) {
 
-				// Request permission.
-				ActivityCompat.requestPermissions(MainActivity.this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
-			}
-		}).show();
-	}
+                // Request permission.
+                ActivityCompat.requestPermissions(MainActivity.this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
+            }
+        }).show();
+    }
 
-	/**
-	 * Checks if the user has entered in the app for the first time and enabled the location
-	 * services.
-	 *
-	 * @return True if user has enabled and also for the first time in the app, false otherwise.
-	 */
-	protected boolean isFirstTime() {
+    /**
+     * Checks if the user has entered in the app for the first time and enabled the location
+     * services.
+     *
+     * @return True if user has enabled and also for the first time in the app, false otherwise.
+     */
+    protected boolean isFirstTime() {
 
-		final String FIRST_TIME = "first_time";
+        final String FIRST_TIME = "first_time";
 
-		if (firstTime == null) {
-			final SharedPreferences mPreferences = this.getSharedPreferences(FIRST_TIME, Context.MODE_PRIVATE);
-			firstTime = mPreferences.getBoolean("firstTime", true);
-			if (firstTime) {
-				final SharedPreferences.Editor editor = mPreferences.edit();
+        if (firstTime == null) {
+            final SharedPreferences mPreferences = this.getSharedPreferences(FIRST_TIME, Context.MODE_PRIVATE);
+            firstTime = mPreferences.getBoolean("firstTime", true);
+            if (firstTime) {
+                final SharedPreferences.Editor editor = mPreferences.edit();
 
-				if (locationServicesEnabled()) {
-					editor.putBoolean("firstTime", false);
-					editor.commit();
-				}
-			}
-		}
+                if (locationServicesEnabled()) {
+                    editor.putBoolean("firstTime", false);
+                    editor.commit();
+                }
+            }
+        }
 
-		return firstTime;
-	}
+        return firstTime;
+    }
 
     // GEOFENCE PART
     /**
@@ -618,63 +618,63 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 "You need to use ACCESS_FINE_LOCATION with geofences", securityException);
     }
 
-	protected Boolean firstTime = null;
+    protected Boolean firstTime = null;
 
-	private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
 
-	private static final int PERMISSIONS_REQUEST_CODE = 1111;
+    private static final int PERMISSIONS_REQUEST_CODE = 1111;
 
-	private static final String KEY_SUBSCRIBED = "subscribed";
+    private static final String KEY_SUBSCRIBED = "subscribed";
 
-	/**
-	 * The entry point to Google Play Services.
-	 */
-	private GoogleApiClient geoGoogleApiClient;
+    /**
+     * The entry point to Google Play Services.
+     */
+    private GoogleApiClient geoGoogleApiClient;
 
-	/**
-	 * The container {@link android.view.ViewGroup} for the minimal UI associated with this sample.
-	 */
-	private RelativeLayout mContainer;
+    /**
+     * The container {@link android.view.ViewGroup} for the minimal UI associated with this sample.
+     */
+    private RelativeLayout mContainer;
 
-	/**
-	 * Tracks subscription state. Set to true when a call to
-	 * {@link Messages#subscribe(GoogleApiClient, MessageListener)} succeeds.
-	 */
-	private boolean mSubscribed = false;
+    /**
+     * Tracks subscription state. Set to true when a call to
+     * {@link Messages#subscribe(GoogleApiClient, MessageListener)} succeeds.
+     */
+    private boolean mSubscribed = false;
 
-	/**
-	 * Adapter for working with messages from nearby beacons.
-	 */
-	private ArrayAdapter<String> mNearbyMessagesArrayAdapter;
+    /**
+     * Adapter for working with messages from nearby beacons.
+     */
+    private ArrayAdapter<String> mNearbyMessagesArrayAdapter;
 
-	/**
-	 * Backing data structure for {@code mNearbyMessagesArrayAdapter}.
-	 */
-	private List<String> mNearbyMessagesList = new ArrayList<>();
+    /**
+     * Backing data structure for {@code mNearbyMessagesArrayAdapter}.
+     */
+    private List<String> mNearbyMessagesList = new ArrayList<>();
 
-	private ListView nearbyMessagesListView = null;
+    private ListView nearbyMessagesListView = null;
 
-	// GEFENCE
-	protected GoogleApiClient mGoogleApiClient;
+    // GEFENCE
+    protected GoogleApiClient mGoogleApiClient;
 
-	/**
-	 * The list of geofences used in this sample.
-	 */
-	protected ArrayList<Geofence> mGeofenceList;
+    /**
+     * The list of geofences used in this sample.
+     */
+    protected ArrayList<Geofence> mGeofenceList;
 
-	/**
-	 * Used to keep track of whether geofences were added.
-	 */
-	private boolean mGeofencesAdded;
+    /**
+     * Used to keep track of whether geofences were added.
+     */
+    private boolean mGeofencesAdded;
 
-	/**
-	 * Used when requesting to add or remove geofences.
-	 */
-	private PendingIntent mGeofencePendingIntent;
+    /**
+     * Used when requesting to add or remove geofences.
+     */
+    private PendingIntent mGeofencePendingIntent;
 
-	/**
-	 * Used to persist application state about whether geofences were added.
-	 */
-	private SharedPreferences mSharedPreferences;
+    /**
+     * Used to persist application state about whether geofences were added.
+     */
+    private SharedPreferences mSharedPreferences;
 
 }
