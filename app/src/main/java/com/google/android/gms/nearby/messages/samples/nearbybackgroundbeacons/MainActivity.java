@@ -119,8 +119,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
      * On create method.
      */
     private void continueOnCreate() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        setSupportActionBar(toolbar);
 
         mContainer = (RelativeLayout) findViewById(R.id.main_activity_container);
         final List<String> cachedMessages = Utils.getCachedMessages(this);
